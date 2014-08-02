@@ -14,10 +14,10 @@ set x %B0000000000000000,  // x = 0
 set y %B1111111111111111;  // y = -1
 
 // Compute 0
-set zx 1,
-set nx 0,
-set zy 1,
-set ny 0,
+set zx 0,
+set nx 1,
+set zy 0,
+set ny 1,
 set f  0,
 set no 0,
 eval,
