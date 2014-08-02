@@ -45,5 +45,30 @@ CHIP ALU {
         ng; // 1 if (out<0),  0 otherwise
 
     PARTS:
-   // Put you code here:
+    // zero x input
+    Mux16(a[0..15] = x[0..15], b[0..15] = false, sel = zx, out[0..15] = zeroX);
+    
+    // zero y input
+    Mux16(a[0..15] = y[0..15], b[0..15] = false, sel = zy, out[0..15] = zeroY);
+    
+    // negate x input -- flip all the bits of x and add 1 to the result
+    Not16(in[0..15] = zeroX, out = notX);
+    Inc16(in[0..15] = notX, out[0..15] = negX);
+    
+    // negate y input -- flip all the bits of y and add 1 to the result
+    Not16(in[0..15] = zeroY, out = notY);
+    Inc16(in[0..15] = notY, out[0..15] = negY);
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 }
