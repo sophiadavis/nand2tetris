@@ -45,30 +45,48 @@ CHIP ALU {
         ng; // 1 if (out<0),  0 otherwise
 
     PARTS:
-    // zero x input
+    // zx -- zero x input
     Mux16(a[0..15] = x[0..15], b[0..15] = false, sel = zx, out[0..15] = zeroX);
     
-    // zero y input
+    // zy -- zero y input
     Mux16(a[0..15] = y[0..15], b[0..15] = false, sel = zy, out[0..15] = zeroY);
     
-    // negate x input -- flip all the bits of x and add 1 to the result
+    // nx -- negate x input -- flip all the bits of x and add 1 to the result
     Not16(in[0..15] = zeroX, out = notX);
-    Inc16(in[0..15] = notX, out[0..15] = negX);
+    Mux16(a[0..15] = zeroX, b[0..15] = notX, sel = nx, out[0..15] = pastNotX);
+    // Inc16(in[0..15] = notX, out[0..15] = negX);
     
-    // negate y input -- flip all the bits of y and add 1 to the result
+    // ny -- negate y input -- flip all the bits of y and add 1 to the result
     Not16(in[0..15] = zeroY, out = notY);
-    Inc16(in[0..15] = notY, out[0..15] = negY);
+    Mux16(a[0..15] = zeroY, b[0..15] = notY, sel = ny, out[0..15] = pastNotY);
+    // Inc16(in[0..15] = notY, out[0..15] = negY);
+    
+    // f -- if (f==1)  set out = x + y  // integer 2's complement addition
+    // f -- if (f==0)  set out = x & y  // bitwise "and"
+    Add16(a[0..15] = pastNotX, b[0..15] = pastNotY, out[0..15] = AddXY);
+    And16(a[0..15] = pastNotX, b[0..15] = pastNotY, out[0..15] = AndXY);
+    Mux16(a[0..15] = AndXY, b[0..15] = AddXY, sel = f, out[0..15] = fXY);
+    
+    // if (no==1) set out = ~out   // bitwise "not"
+    Not16(in[0..15] = fXY, out[0..15] = notfXY);
+    Mux16(a[0..15] = fXY, b[0..15] = notfXY, sel = no, out[0..15] = out);
+    
+    // if (out==0) set zr = 1
+//     Not16(in[0..15] = out, out[0..15] = negOut);
+    // Or8Way(in[0..7] = fXY[0..7], out = or1);
+    // Or8Way(in[0..7] = fXY[8..15], out = or2);
+    // Or(a = or1, b = or2, out = notZr);
+    
+    // Not(in = notZr, out = zr);
+    // And16(a[0..15] = notfXY, b[0..15] = fXY, out[0..15] = )
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    // if (out<0) set ng = 1
+    // And(a = out[0], b = true, out = ng);
+    // ----Not(in = fXY[0], out = notFB);
+    // ---- Mux(a = fXY[0], b = notFB, sel = no, out = ng);
+    // DMux(in = fXY[0], sel = , a = aaa, b = ng);
+
     
     
 }
