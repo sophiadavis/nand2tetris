@@ -69,24 +69,15 @@ CHIP ALU {
     
     // if (no==1) set out = ~out   // bitwise "not"
     Not16(in[0..15] = fXY, out[0..15] = notfXY);
-    Mux16(a[0..15] = fXY, b[0..15] = notfXY, sel = no, out[0..15] = out);
+    Mux16(a[0..15] = fXY, b[0..15] = notfXY, sel = no, out[0..15] = out, out[15] = out0, out[0..7] = out1, out[8..15] = out2);
     
     // if (out==0) set zr = 1
-//     Not16(in[0..15] = out, out[0..15] = negOut);
-    // Or8Way(in[0..7] = fXY[0..7], out = or1);
-    // Or8Way(in[0..7] = fXY[8..15], out = or2);
-    // Or(a = or1, b = or2, out = notZr);
+    Or8Way(in[0..7] = out1, out = or1);
+    Or8Way(in[0..7] = out2, out = or2);
+    Or(a = or1, b = or2, out = notZr);
     
-    // Not(in = notZr, out = zr);
-    // And16(a[0..15] = notfXY, b[0..15] = fXY, out[0..15] = )
-    
+    Not(in = notZr, out = zr);    
     
     // if (out<0) set ng = 1
-    // And(a = out[0], b = true, out = ng);
-    // ----Not(in = fXY[0], out = notFB);
-    // ---- Mux(a = fXY[0], b = notFB, sel = no, out = ng);
-    // DMux(in = fXY[0], sel = , a = aaa, b = ng);
-
-    
-    
+    And(a = out0, b = true, out = ng);   
 }
