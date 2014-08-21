@@ -7,15 +7,6 @@
 // (R0, R1, R2 refer to RAM[0], RAM[1], and RAM[3], respectively.)
 
 // Put your code here.
-//@i
-//M = R1 // set incrementer to 0
-//@R0 // A = R0
-//D = M
-
-// while i is not 0
-// Add R0 to R3
-// i = i - 1
-    
     @2
     M = 0 // memloc sum = 0
 

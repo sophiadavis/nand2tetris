@@ -9,3 +9,57 @@
 // program clears the screen, i.e. writes "white" in every pixel.
 
 // Put your code here.
+    @16384
+    D = A
+    
+    @1
+    M = D
+
+
+(LOOP)
+
+    @24576 // keyboard
+    D = M
+    
+    @WHITE
+    D; JEQ
+    
+    // blacken
+    @1 // but dont go out-of-bounds
+    D = M
+    @24575
+    D = D - A
+    @LOOP
+    D; JGE
+    
+    @1
+    D = M
+    A = D
+    M = -1
+    
+    @1
+    D = M
+    M = D + 1
+    
+    @LOOP
+    0;JMP
+
+(WHITE)
+    @1 // but dont go out-of-bounds
+    D = M
+    @16384
+    D = D - A
+    @LOOP
+    D; JLE
+
+    @1
+    D = M
+    M = D - 1
+    
+    @1
+    D = M
+    A = D
+    M = 0
+    @LOOP
+    0;JMP
+
