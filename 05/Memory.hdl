@@ -27,5 +27,22 @@ CHIP Memory {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    // First choose between IO and RAM.
+    DMux(in = load, sel = address[14], a = ram, b = io);
+    
+    // If IO, we need to figure out whether to load screen.    
+    Not(in = address[13], out = screen);
+    And(a = io, b = screen, out = selectScreen);
+    And(a = load, b = selectScreen, out = loadScreen);
+    
+    RAM16K(in[0..15] = in[0..15], load = ram, address[0..13] = address[0..13], out[0..15] = outRam);
+    Screen(in[0..15] = in[0..15], load = loadScreen, address[0..12] = address[0..12], out[0..15] = outScreen);
+    Keyboard(out[0..15] = outKeyboard);
+    
+    // Don't load into keyboard.
+    Mux16(a = outKeyboard, b = false, sel = load, out = outKeyboard2);
+    
+    // Finally, choose which output should be emitted.
+    Mux16(a = outScreen, b = outKeyboard2, sel = address[13], out[0..15] = outio);
+    Mux16(a = outRam, b = outio, sel = address[14], out[0..15] = out[0..15]);
 }
