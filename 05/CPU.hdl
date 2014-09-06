@@ -39,5 +39,122 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+    /**************************************************
+    * Instruction decoding -- i xx a cccccc ddd jjj
+    ***************************************************/
+    
+    // i -- instruction type: 0 = A, 1 = C
+    Not(in = instruction[15], out = typeA);
+    And(a = instruction[15], b = true, out = typeC);
+    
+    // if type C:
+    // a-bit -- will ALU operate on value in A register or on what is stored at Memory[A] (inM)
+    And(a = instruction[12], b = true, out = aBit); 
+    
+    // c-bits -- what function should ALU compute
+    And(a = instruction[11], b = true, out = c1);
+    And(a = instruction[10], b = true, out = c2);
+    And(a = instruction[9], b = true, out = c3);
+    And(a = instruction[8], b = true, out = c4);
+    And(a = instruction[7], b = true, out = c5);
+    And(a = instruction[6], b = true, out = c6);
+    
+    // d-bits -- where should result be stored
+    And(a = instruction[5], b = true, out = destA);
+    And(a = instruction[4], b = true, out = destD);
+    And(a = instruction[3], b = true, out = destM);
+    
+    // j-bits -- how to find next instruction (jump conditions)
+    And(a = instruction[2], b = true, out = j1);
+    And(a = instruction[1], b = true, out = j2);
+    And(a = instruction[0], b = true, out = j3);
+            
+    /**************************************************
+    * Instruction execution
+    ***************************************************/
+    
+    // What to put in A register?
+    // if type C -- load output from ALU
+    // if type A -- load 15-bit constant from instruction
+    Mux16(a[0..15] = outALU, b[0..14] = instruction[0..14], b[15] = false, sel = typeA, out[0..15] = accOrCompute);
+    
+    And(a = typeC, b = destA, out = storeCompA);
+    Or(a = typeA, b = storeCompA, out = loadA);
+    ARegister(in[0..15] = accOrCompute, load = loadA, out[0..15] = outA, out[0..14] = addressM[0..14]);
+    
+    And(a = typeC, b = destD, out = loadD);
+    DRegister(in[0..15] = outALU, load = loadD, out[0..15] = outD);
+    
+    Mux16(a[0..15] = outA, b[0..15] = inM[0..15], sel = aBit, out[0..15] = MemAorA);
+    
+    ALU(x[0..15] = outD, y[0..15] = MemAorA, zx = c1, nx = c2, zy = c3, ny = c4, f = c5, no = c6, out[0..15] = outALU, zr = zero, ng = neg);
+    
+    
+    
+    And(a = typeC, b = destM, out = loadM, out = writeM);
+    Mux16(a[0..15] = false, b[0..15] = outALU, sel = loadM, out[0..15] = outM[0..15]);
+    //Memory(in[0..15] = outALU, load = loadM, address[0..14] = outA[0..14], out[0..15] = outM[0..15]);
+    
+    /**************************************************
+    * Fetch next instruction
+    ***************************************************/
+    
+    /******************************
+    * 0 0 0 null  No jump  
+    * 0 0 1 JGT   If out > 0 jump 
+    * 0 1 0 JEQ   If out = 0 jump
+    * 0 1 1 JGE   If out >= 0 jump
+    * 1 0 0 JLT   If out < 0 jump
+    * 1 0 1 JNE   If out != 0 jump
+    * 1 1 0 JLE   If out <= 0 jump
+    * 1 1 1 JMP   Jump
+    ********************************/
+    
+    Not(in = j1, out = notj1);
+    Not(in = j2, out = notj2);
+    Not(in = j3, out = notj3);
+
+    FullAdder(a = j1, b = j2, c = j3, sum = jSum, carry = jCarry);    
+    Nand(a = jSum, b = jCarry, out = null);
+    And(a = jSum, b = jCarry, out = JMP);
+    
+    And(a = notj1, b = notj2, out = notj12);
+    And(a = notj12, b = j3, out = JGT);
+    
+    And(a = notj1, b = notj3, out = notj13);
+    And(a = notj13, b = j2, out = JEQ);
+    
+    And(a = j2, b = j3, out = j23);
+    And(a = j23, b = notj1, out = JGE);
+    
+    And(a = notj2, b = notj3, out = notj23);
+    And(a = notj23, b = j1, out = JLT);
+    
+    And(a = j1, b = j3, out = j13);
+    And(a = j13, b = notj2, out = JNE);
+    
+    And(a = j1, b = j2, out = j12);
+    And(a = j12, b = notj3, out = JLE);
+    
+    Not(in = neg, out = notNeg);
+    Not(in = zero, out = notZero);
+    And(a = notZero, b = notNeg, out = strictlyPos);
+    And(a = notZero, b = neg, out = strictlyNeg);
+    Or(a = zero, b = notNeg, out = posOrZero);
+    Or(a = zero, b = neg, out = negOrZero); 
+    
+    And(a = JGT, b = strictlyPos, out = jump1);
+    And(a = JEQ, b = zero, out = jump2);
+    And(a = JGE, b = posOrZero, out = jump3);
+    And(a = JLT, b = strictlyNeg, out = jump4);
+    And(a = JNE, b = notZero, out = jump5);
+    And(a = JLE, b = negOrZero, out = jump6);
+    
+    Or8Way(in[0] = JMP, in[1] = jump1, in[2] = jump2, in[3] = jump3, in[4] = jump4, in[5] = jump5, in[6] = jump6, in[7] = false, out = cJump);
+    
+    And(a = cJump, b = typeC, out = jump);
+    
+    Or(a = null, b = typeA, out = inc); 
+    
+    PC(in[0..15] = outA, load = jump, inc = inc, reset = reset, out[0..14] = pc[0..14]);
 }
